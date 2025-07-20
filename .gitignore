@@ -161,3 +161,11 @@ cython_debug/
 
 .ruff_cache/
 *.zip
+/.vs/assignment1-basics/copilot-chat/2bd4d6eb/sessions
+/.vs/assignment1-basics/CopilotIndices
+/.vs/assignment1-basics/FileContentIndex
+/.vs/assignment1-basics/v17/TestStore
+/.vs/assignment1-basics/v17
+/prof
+/TestResults
+/.vs

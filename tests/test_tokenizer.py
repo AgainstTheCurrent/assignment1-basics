@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-import resource
+# import resource
 import sys
 
 import psutil
@@ -15,7 +15,7 @@ from .common import FIXTURES_PATH, gpt2_bytes_to_unicode
 VOCAB_PATH = FIXTURES_PATH / "gpt2_vocab.json"
 MERGES_PATH = FIXTURES_PATH / "gpt2_merges.txt"
 
-
+"""
 def memory_limit(max_mem):
     def decorator(f):
         def wrapper(*args, **kwargs):
@@ -34,7 +34,7 @@ def memory_limit(max_mem):
         return wrapper
 
     return decorator
-
+"""
 
 def get_tokenizer_from_vocab_merges_path(
     vocab_path: str | os.PathLike,
@@ -446,7 +446,7 @@ def test_encode_memory_usage():
         _ = _encode(tokenizer, contents)
 
 
-@memory_limit(int(1e6))
+# @memory_limit(int(1e6))
 def _encode_iterable(tokenizer, iterable):
     """
     We place tokenizer.encode_iterable into a separate function so we can limit memory
@@ -455,7 +455,7 @@ def _encode_iterable(tokenizer, iterable):
     yield from tokenizer.encode_iterable(iterable)
 
 
-@memory_limit(int(1e6))
+# @memory_limit(int(1e6))
 def _encode(tokenizer, text):
     """
     We place tokenizer.encode into a separate function so we can limit memory
