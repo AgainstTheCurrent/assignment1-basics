@@ -1,5 +1,8 @@
+from typing import Iterable
 import torch
 from einops import einsum
+from jaxtyping import Float, Int
+from torch import Tensor
 
 
 def softmax(x: torch.Tensor, dim: int = -1) -> torch.Tensor:
@@ -22,3 +25,19 @@ def scaled_dot_product_attention(
     attn_weights = softmax(scores, dim=-1)
     output = torch.matmul(attn_weights, V)
     return output
+
+
+def cross_entropy(inputs: Float[Tensor, " batch_size vocab_size"],
+                  targets: Int[Tensor, " batch_size"]) -> Float[Tensor, ""]:
+    inputs_max = torch.max(inputs, dim=-1, keepdim=True).values
+    inputs = inputs - inputs_max  # For numerical stability
+    return (inputs.exp().sum(dim=-1).log() - torch.gather(inputs, dim=-1, index=targets.unsqueeze(-1)).squeeze(-1)).mean()
+
+
+def gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float) -> None:
+    total_norm = torch.sqrt(sum(p.grad.data.norm()**2 for p in parameters if p.grad is not None))
+    clip_coef = max_l2_norm / (total_norm + 1e-6)
+    if clip_coef < 1:
+        for p in parameters:
+            if p.grad is not None:
+                p.grad = clip_coef * p.grad
