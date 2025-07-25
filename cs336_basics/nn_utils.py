@@ -29,9 +29,9 @@ def scaled_dot_product_attention(
 
 def cross_entropy(inputs: Float[Tensor, " batch_size vocab_size"],
                   targets: Int[Tensor, " batch_size"]) -> Float[Tensor, ""]:
-    inputs_max = torch.max(inputs, dim=-1, keepdim=True).values
+    inputs_max = inputs.max(dim=-1, keepdim=True).values
     inputs = inputs - inputs_max  # For numerical stability
-    return (inputs.exp().sum(dim=-1).log() - torch.gather(inputs, dim=-1, index=targets.unsqueeze(-1)).squeeze(-1)).mean()
+    return (inputs.exp().sum(dim=-1).log() - inputs.gather(dim=-1, index=targets.long().unsqueeze(-1)).squeeze(-1)).mean()
 
 
 def gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float) -> None:

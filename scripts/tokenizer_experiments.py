@@ -9,8 +9,8 @@ import gc
 
 ts_input_files = ("../data/TinyStoriesV2-GPT4-valid.txt", "../data/TinyStoriesV2-GPT4-train.txt")
 owt_input_files = ("../data/owt_valid.txt", "../data/owt_train.txt")
-ts_output_files = ("../data/TinyStoriesV2-GPT4-train-tokens.txt",  "../data/TinyStoriesV2-GPT4-valid-tokens.txt")
-owt_output_files = ("../data/owt_valid-tokens.txt", "../data/owt_train-tokens.txt")
+ts_output_files = ("../data/TinyStoriesV2-GPT4-valid-tokens.bin",  "../data/TinyStoriesV2-GPT4-train-tokens.bin")
+owt_output_files = ("../data/owt_valid-tokens.bin", "../data/owt_train-tokens.bin")
 
 ts_vocab_file = "../data/TinyStoriesV2-GPT4-vocab.json"
 ts_merges_file = "../data/TinyStoriesV2-GPT4-merges.json"

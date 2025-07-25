@@ -9,8 +9,10 @@ def get_batch(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     # Get a random batch of input data and target data from the dataset
     idx = torch.randint(0, dataset.shape[0] - context_length, (batch_size,))
-    x = torch.stack([torch.from_numpy(dataset[i:i + context_length]).to(device) for i in idx])
-    y = torch.stack([torch.from_numpy(dataset[i + 1:i + context_length + 1]).to(device) for i in idx])
+    x = torch.stack(
+        [torch.from_numpy(dataset[i:i + context_length]).int().to(device) for i in idx])
+    y = torch.stack([torch.from_numpy(
+        dataset[i + 1:i + context_length + 1]).int().to(device) for i in idx])
     return x, y
 
 

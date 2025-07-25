@@ -125,7 +125,7 @@ class MultiHeadSelfAttention(torch.nn.Module):
         self.d_k = d_model // num_heads
         if rope:
             self.rope = RoPE(theta=theta, d_k=self.d_k,
-                             max_seq_len=max_seq_len)
+                             max_seq_len=max_seq_len, device=device)
         else:
             self.rope = None
         self.device = device
