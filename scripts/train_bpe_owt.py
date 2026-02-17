@@ -5,18 +5,16 @@ import time
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from cs336_basics.bpe_training import train_bpe
 
-input_file = "../data/owt_train.txt"
-output_vocab_file = "../data/owt-vocab.json"
-output_merges_file = "../data/owt-merges.json"
+from config import OWT_TRAIN_TEXT_PATH, OWT_VOCAB_PATH, OWT_MERGES_PATH, OWT_VOCAB_SIZE, SPECIAL_TOKENS
 
 if __name__ == "__main__":
     start_time = time.time()
     vocab, merges = train_bpe(
-        input_path=input_file,
-        vocab_size=32000,
-        special_tokens=["<|endoftext|>"])
-    pickle.dump(vocab, open(output_vocab_file, "wb"))
-    pickle.dump(merges, open(output_merges_file, "wb"))
+        input_path=OWT_TRAIN_TEXT_PATH,
+        vocab_size=OWT_VOCAB_SIZE,
+        special_tokens=SPECIAL_TOKENS)
+    pickle.dump(vocab, open(OWT_VOCAB_PATH, "wb"))
+    pickle.dump(merges, open(OWT_MERGES_PATH, "wb"))
     end_time = time.time()
     print(f"Training completed in {end_time - start_time:.2f} seconds.")
 

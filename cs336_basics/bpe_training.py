@@ -45,7 +45,7 @@ def train_bpe(input_path: str, vocab_size: int, special_tokens: list[str]) -> tu
             - merges (list[tuple[bytes, bytes]]): A list of tuples representing the BPE merges.
     """
     # Prepare special token bytes for exclusion
-    special_token_bytes = set(token.encode('utf-8') for token in special_tokens)
+    special_token_bytes = [token.encode('utf-8') for token in special_tokens]
     vocab = init_vocab(vocab_size, special_token_bytes)    
     
     # Pretokenize input file and frequencies of words
@@ -72,13 +72,14 @@ def train_bpe(input_path: str, vocab_size: int, special_tokens: list[str]) -> tu
     # BPE merge loop
     while len(vocab) < vocab_size:
         freq = 0
+        most_frequent_pair = None
         while not pq.empty():
             # Find the most frequent byte pair
             freq, most_frequent_pair = pq.get().val
             # There are stale entries in the priority queue as we cannot remove them, skip them here instead
             if pair_freqs.get(most_frequent_pair, -1) == freq:
                 break
-        if freq == 0:
+        if freq == 0 or most_frequent_pair is None:
             break
         new_token = most_frequent_pair[0] + most_frequent_pair[1]
         vocab[next_token_id] = new_token

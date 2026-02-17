@@ -8,6 +8,17 @@ from torch import Tensor
 import pickle
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--update-snapshots", action="store_true", default=False,
+        help="Regenerate snapshot files from current test outputs.",
+    )
+    parser.addoption(
+        "--snapshot-exact", action="store_true", default=False,
+        help="Use exact (zero-tolerance) snapshot comparison.",
+    )
+
+
 _A = TypeVar("_A", np.ndarray, Tensor)
 
 def _canonicalize_array(arr: _A) -> np.ndarray:
@@ -54,7 +65,10 @@ class NumpySnapshot:
             k: _canonicalize_array(v)
             for k, v in arrays_dict.items()
         }
-        
+
+        if force_update:
+            np.savez(snapshot_path, **arrays_dict)
+            return
         
         # Load the snapshot
         expected_arrays = dict(np.load(snapshot_path))
@@ -162,7 +176,7 @@ def numpy_snapshot(request):
             result = my_function()
             numpy_snapshot.assert_match(result, "my_test_name")
     """
-    force_update = False
+    force_update = request.config.getoption("--update-snapshots", default=False)
 
     match_exact = request.config.getoption("--snapshot-exact", default=False)
     

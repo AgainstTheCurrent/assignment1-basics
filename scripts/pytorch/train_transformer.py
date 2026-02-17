@@ -19,11 +19,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 from cs336_basics.decoding import top_p_decode
 from cs336_basics.bpe_tokenizer import BPETokenizer
 from cs336_basics.modules import TransformerLM  # noqa: E402
-from cs336_basics.optimizers import AdamW, get_lr_cosine_schedule  # noqa: E402
+from cs336_basics.pytorch.optimizers import AdamW, get_lr_cosine_schedule  # noqa: E402
 from cs336_basics.nn_utils import (  # noqa: E402
     cross_entropy, gradient_clipping
 )
-from cs336_basics.training_utils import (  # noqa: E402
+from cs336_basics.pytorch.training_utils import (  # noqa: E402
     get_batch, save_checkpoint, load_checkpoint
 )
 
@@ -338,8 +338,10 @@ def train_transformer(
             # Optimizer step
             optimizer.step()
             if lr_use_cosine_schedule:
-                optimizer.param_groups["lr"] = get_lr_cosine_schedule(
-                    iter_num, lr, lr_min, 0, max_iters)
+                for group in optimizer.param_groups:
+                    # Update learning rate using cosine schedule
+                    group["lr"] = get_lr_cosine_schedule(
+                        iter_num, lr, lr_min, 0, max_iters)
 
             # Logging
             if iter_num % log_interval == 0:
@@ -533,8 +535,8 @@ def train_tinystories(
     eval_interval: int = 1000,
     log_interval: int = 1000,
     save_interval: int = 1000,
-    train_data_path: str = "data/TinyStoriesV2-GPT4-train-tokens.txt",
-    val_data_path: str = "data/TinyStoriesV2-GPT4-valid-tokens.txt",
+    train_data_path: str = "/data/TinyStoriesV2-GPT4-train-tokens.txt",
+    val_data_path: str = "/data/TinyStoriesV2-GPT4-valid-tokens.txt",
     checkpoint_dir: str = "models/",
     device_str: str = "cuda",
     dtype_str: str = "float32",
@@ -571,6 +573,7 @@ def train_tinystories(
         theta=theta,
         # Optimizer parameters
         lr=lr,
+        lr_use_cosine_schedule=True,
         weight_decay=weight_decay,
         betas=betas,
         eps=eps,
@@ -852,7 +855,7 @@ def generate():
     theta = 10000.0
 
     # Paths
-    checkpoint_dir = "models/tinystories_lr_0.003_bs_16"
+    checkpoint_dir = "models/tinystories_lr_0.003_bs_128"
     vocab_path = "data/TinyStoriesV2-GPT4-vocab.json"
     merge_path = "data/TinyStoriesV2-GPT4-merges.json"
 
@@ -875,7 +878,7 @@ def generate():
             break
 
     if not final_checkpoint_path:
-        raise FileNotFoundError(f"No checkpoint found in {checkpoint_dir}")
+        raise FileNotFoundError(f"No checkpoint found in {final_checkpoint_path}")
 
     print(f"Loading checkpoint: {final_checkpoint_path}")
 
@@ -892,10 +895,10 @@ def generate():
         dtype=dtype
     )
     torch.set_float32_matmul_precision('high')
-    compiled_model = torch.compile(model)
+    model = torch.compile(model)
 
     # Load checkpoint (create dummy optimizer for loading)
-    from cs336_basics.optimizers import AdamW
+    from cs336_basics.pytorch.optimizers import AdamW
     dummy_optimizer = AdamW(model.parameters(), lr=0.001)
 
     try:
@@ -944,7 +947,7 @@ def generate():
         with torch.no_grad():
             # Generate tokens
             generated_ids = top_p_decode(
-                compiled_model, input_ids, max_tokens - len(prompt_tokens),
+                model, input_ids, max_tokens - len(prompt_tokens),
                 temperature=0.7, p=0.9,
                 stop_token_ids=endoftext_token)
 
@@ -959,7 +962,7 @@ def generate():
 
 if __name__ == "__main__":
     # Uncomment one of these:
-    torch.set_float32_matmul_precision('high')
+    # torch.set_float32_matmul_precision('high')
     # find_hyperparameters()  # Hyperparameter search
     # train_tinystories()  # Single training run
     train_tinystories_main()  # Train with best params and auto-resume

@@ -1,43 +1,85 @@
-from typing import Iterable
-import torch
-from einops import einsum
-from jaxtyping import Float, Int
-from torch import Tensor
+"""
+JAX implementation of neural network utility functions.
+
+Original PyTorch version preserved at cs336_basics/pytorch/nn_utils.py.
+"""
+
+from typing import Optional
+
+import jax
+import jax.numpy as jnp
 
 
-def softmax(x: torch.Tensor, dim: int = -1) -> torch.Tensor:
-    x_max = torch.max(x, dim=dim, keepdim=True).values
-    e_x = torch.exp(x - x_max)
-    sum_e_x = torch.sum(e_x, dim=dim, keepdim=True)
-    return e_x / sum_e_x
+def softmax(x: jnp.ndarray, axis: int = -1) -> jnp.ndarray:
+    x_max = jnp.max(x, axis=axis, keepdims=True)
+    e_x = jnp.exp(x - x_max)
+    return e_x / jnp.sum(e_x, axis=axis, keepdims=True)
 
 
 def scaled_dot_product_attention(
-    Q: torch.Tensor,
-    K: torch.Tensor,
-    V: torch.Tensor,
-    mask: torch.Tensor = None,
-) -> torch.Tensor:
-    d_k = Q.size(-1)
-    scores = einsum(Q, K, "... n d_k, ... m d_k -> ... n m") / torch.sqrt(torch.tensor(d_k, dtype=Q.dtype))
+    Q: jnp.ndarray,
+    K: jnp.ndarray,
+    V: jnp.ndarray,
+    mask: Optional[jnp.ndarray] = None,
+) -> jnp.ndarray:
+    """Scaled dot-product attention.
+
+    Args:
+        Q: (..., queries, d_k)
+        K: (..., keys,   d_k)
+        V: (..., keys,   d_v)
+        mask: (..., queries, keys) -- True = attend, False = masked
+
+    Returns:
+        (..., queries, d_v)
+    """
+    d_k = Q.shape[-1]
+    scores = jnp.einsum('...nk,...mk->...nm', Q, K) / jnp.sqrt(jnp.array(d_k, dtype=Q.dtype))
     if mask is not None:
-        scores = scores.masked_fill(mask == 0, float("-inf"))
-    attn_weights = softmax(scores, dim=-1)
-    output = torch.matmul(attn_weights, V)
-    return output
+        scores = jnp.where(mask, scores, jnp.finfo(scores.dtype).min)
+    attn_weights = softmax(scores, axis=-1)
+    return jnp.einsum('...nm,...mk->...nk', attn_weights, V)
 
 
-def cross_entropy(inputs: Float[Tensor, " batch_size vocab_size"],
-                  targets: Int[Tensor, " batch_size"]) -> Float[Tensor, ""]:
-    inputs_max = inputs.max(dim=-1, keepdim=True).values
-    inputs = inputs - inputs_max  # For numerical stability
-    return (inputs.exp().sum(dim=-1).log() - inputs.gather(dim=-1, index=targets.long().unsqueeze(-1)).squeeze(-1)).mean()
+def cross_entropy(
+    inputs: jnp.ndarray,
+    targets: jnp.ndarray,
+) -> jnp.ndarray:
+    """Average cross-entropy loss.
+
+    Args:
+        inputs: (..., seq_len, vocab_size) -- unnormalised logits.
+        targets: (..., seq_len) -- integer class indices.
+
+    Returns:
+        Scalar mean cross-entropy loss.
+    """
+    inputs_max = jnp.max(inputs, axis=-1, keepdims=True)
+    inputs = inputs - inputs_max  # numerical stability
+    log_sum_exp = jnp.log(jnp.sum(jnp.exp(inputs), axis=-1))
+    target_logits = jnp.take_along_axis(inputs, targets[..., None].astype(jnp.int32), axis=-1).squeeze(-1)
+    return jnp.mean(log_sum_exp - target_logits)
 
 
-def gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float) -> None:
-    total_norm = torch.sqrt(sum(p.grad.data.norm()**2 for p in parameters if p.grad is not None))
+def gradient_clipping(
+    params: dict,
+    max_l2_norm: float,
+) -> dict:
+    """Clip parameter gradients by global L2 norm.
+
+    In JAX, gradients are just pytrees (dicts of arrays), not mutable
+    Parameter objects.  This function takes a gradient pytree and returns
+    a clipped copy.
+
+    Args:
+        params: A pytree of gradient arrays (same structure as model params).
+        max_l2_norm: Maximum allowed L2 norm.
+
+    Returns:
+        Clipped gradient pytree with the same structure.
+    """
+    leaves = jax.tree.leaves(params)
+    total_norm = jnp.sqrt(sum(jnp.sum(g ** 2) for g in leaves))
     clip_coef = max_l2_norm / (total_norm + 1e-6)
-    if clip_coef < 1:
-        for p in parameters:
-            if p.grad is not None:
-                p.grad = clip_coef * p.grad
+    clip_coef = jnp.minimum(clip_coef, 1.0)
+    return jax.tree.map(lambda g: g * clip_coef, params)

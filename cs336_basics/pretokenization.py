@@ -108,7 +108,7 @@ def pretokenize(input_path: str, num_processes: int,
 
     chunk_idx = 0
     num_chunks = len(boundaries) - 1
-    result = None
+    result = {}
     while chunk_idx < num_chunks:
         print(f"Prepared chunk {chunk_idx+1}/{num_chunks}")
         batch_size = min(num_processes, num_chunks - chunk_idx)
@@ -119,16 +119,17 @@ def pretokenize(input_path: str, num_processes: int,
             f.seek(start)
             chunk = f.read(end - start).decode("utf-8", errors="ignore")
             args_list.append((chunk, processor_args))
-        with multiprocessing.Pool(processes=batch_size) as pool:
+        ctx = multiprocessing.get_context("spawn")
+        with ctx.Pool(processes=batch_size) as pool:
             chunk_results = pool.map(chunk_processor, args_list)
         del args_list
         gc.collect()
         if not chunk_results:
             break
         chunk_idx += batch_size
-        if result is None:
+        if not result:
             if not chunk_results:
-                return None
+                return {}
             result = type(chunk_results[0])()
         for chunk_result in chunk_results:
             result = reducer(result, chunk_result, reducer_args)

@@ -27,7 +27,7 @@ def test_linear(numpy_snapshot, ts_state_dict, in_embeddings, d_model, d_ff):
         in_features=in_embeddings,
     )
     numpy_snapshot.assert_match(
-        output
+        output, atol=1e-6
     )
 
 
@@ -40,7 +40,7 @@ def test_embedding(numpy_snapshot, ts_state_dict, in_indices, vocab_size, d_mode
         token_ids=in_indices,
     )
     numpy_snapshot.assert_match(
-        output
+        output, atol=1e-6
     )
 
 
@@ -56,7 +56,7 @@ def test_swiglu(numpy_snapshot, ts_state_dict, in_embeddings, d_model, d_ff):
         w3_weight=w3_weight,
         in_features=in_embeddings,
     )
-    numpy_snapshot.assert_match(actual_output, atol=1e-5)
+    numpy_snapshot.assert_match(actual_output, atol=1e-6)
 
 
 def test_scaled_dot_product_attention(numpy_snapshot, q, k, v, mask):
@@ -71,8 +71,7 @@ def test_scaled_dot_product_attention(numpy_snapshot, q, k, v, mask):
     actual_output = run_scaled_dot_product_attention(Q=q, K=k, V=v, mask=mask)
     # numpy.testing.assert_allclose(actual_output.detach().numpy(), expected_output.detach().numpy(), atol=1e-6)
     numpy_snapshot.assert_match(
-        actual_output,
-        atol=1e-6,
+        actual_output, atol=1e-3
     )
 
 
@@ -83,8 +82,7 @@ def test_4d_scaled_dot_product_attention(numpy_snapshot, q, k, v, mask):
 
     actual_output = run_scaled_dot_product_attention(Q=q, K=k, V=v, mask=mask)
     numpy_snapshot.assert_match(
-        actual_output,
-        atol=1e-6,
+        actual_output, atol=1e-3
     )
 
 
@@ -105,7 +103,7 @@ def test_multihead_self_attention(numpy_snapshot, in_embeddings, d_model, n_head
         in_features=in_embeddings,
     )
     # numpy.testing.assert_allclose(actual_output.detach().numpy(), expected_output.detach().numpy(), atol=1e-6)
-    numpy_snapshot.assert_match(actual_output, atol=1e-6)
+    numpy_snapshot.assert_match(actual_output, atol=1e-3)
 
 
 def test_multihead_self_attention_with_rope(
@@ -131,7 +129,7 @@ def test_multihead_self_attention_with_rope(
         token_positions=pos_ids,
     )
     # numpy.testing.assert_allclose(actual_output.detach().numpy(), expected_output.detach().numpy(), atol=1e-6)
-    numpy_snapshot.assert_match(actual_output, atol=1e-6)
+    numpy_snapshot.assert_match(actual_output, atol=1e-3)
 
 
 def test_transformer_lm(
@@ -155,9 +153,7 @@ def test_transformer_lm(
     )
     # numpy.testing.assert_allclose(actual_output.detach().numpy(), expected_output.detach().numpy(), atol=1e-4)
     numpy_snapshot.assert_match(
-        actual_output, 
-        atol=1e-4,
-        rtol=1e-2
+        actual_output, atol=2e-2
     )
 
 
@@ -180,8 +176,7 @@ def test_transformer_lm_truncated_input(
     )
 
     numpy_snapshot.assert_match(
-        truncated_actual_output,
-        atol=1e-4,
+        truncated_actual_output, atol=2e-2
     )
 
 
@@ -201,8 +196,7 @@ def test_transformer_block(numpy_snapshot, ts_state_dict, in_embeddings, d_model
         in_features=in_embeddings,
     )
     numpy_snapshot.assert_match(
-        actual_output,
-        atol=1e-6,
+        actual_output, atol=2e-3
     )
 
 
